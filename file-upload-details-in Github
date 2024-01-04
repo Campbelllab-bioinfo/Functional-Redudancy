@@ -1,0 +1,33 @@
+1. CoverM_Abundance_Cpm.xlsx : This file contains abundance data for 347 MAGs at different salinity and different season from two bays.
+
+The naming is like following:
+
+The sheet name : 
+CP stands for first bay Chesapeake
+Sum stands for summer
+fresh water/low salinity means it is from the river which joins to the bay and salinity is too low.
+Medium : from Estury, medium salinity ranging from 15-22
+High : the sample originates from open ocean_high salinity
+
+
+Name of the sample: classified_CPBay_Sum06G08_DNA.bac.ar.fastq TPM 
+
+                       name of bay-season(summer) salinity (06 is 0.6) G is greater than 0.8(particle attached)-----
+                                                                       L stands for lessthan 0.8 micro meter(free living)....
+                                                                       
+      *** the original file is   coverm_360_renamed_cpm.tsv.
+      
+2. Metabolic_results.xlsx : this file contains the output of metabolic. this not edited/original one.
+
+However you can find the edited one as below.
+
+i). FunctionHit_metabolic.xlsx : contain salinity and season wise details
+	
+ii) HMMHitNum_jan24_mg)metabolic.xlsx
+iii) KEGGModuleHit_metabolic.xlsx       
+
+3. updtaed metadata file.
+
+     **************************************
+     
+   Two other files are    KEGGModuleHit_metabolic_0-1_scoring.xlsx and  FunctionHit_metabolic_0-1 scoring.xlsx, here the metabolic output just turned to a scoring, 0 corresponds for absent and 1 for presence.
