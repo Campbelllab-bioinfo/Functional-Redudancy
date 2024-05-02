@@ -4,6 +4,8 @@
 
 ## required R libraries
 # general libraries
+options(rgl.useNULL = TRUE)
+library(rgl)
 library(reshape2)
 library(ggplot2)
 library(patchwork)
@@ -41,16 +43,16 @@ theme_depth<-function() {
 #############################################################################################
 
 # Info on samples
-info<-read.csv("/export/lv6/user/pramond/jojy/metadata.csv", header = TRUE, sep = ";")
+info<-read.csv("Desktop/JOJY_FRED/metadata.csv", header = TRUE, sep = ";")
 info$SF<-factor(info$SF, levels = c("0.2","0.8"),labels = c("Free-Living","Particle-Attached"), ordered = TRUE)
 
 # Abundance Table
-rpkg<-read.csv("/export/lv6/user/pramond/jojy/coverm_formatted.csv", sep = ";", header = TRUE, row.names = 1)
+rpkg<-read.csv("Desktop/JOJY_FRED/coverm_formatted.csv", sep = ";", header = TRUE, row.names = 1)
 rownames(rpkg)<-gsub("-",".",rownames(rpkg)) # there was a mismatch between MAGs names in the RPKG and the trait tables due to this character
 
 ## Trait Tables from METABOLIC
 # import
-traits<-read.xlsx("/export/lv6/user/pramond/jojy/METABOLIC_result.xlsx", sheet = 1)
+traits<-read.xlsx("Desktop/JOJY_FRED/METABOLIC_result.xlsx", sheet = 1)
 traits<-separate_longer_delim(cols= Hmm.file, data = traits, ", ") # get as rows/traits as there are hmms
 # trait information table
 trait.info<-traits[, c(1:10)]
@@ -65,7 +67,8 @@ traits<-traits[rownames(traits) %in% rownames(rpkg),] # we remove them
 traits<-decostand(traits, "pa") # convert to 0 and 1s
 traits<-traits[,colSums(traits)>0] # remove traits absent in all MAGs
 # create trait-based distance matrix
-trait.dist<-parDist(as.matrix(traits), method = "euclidean")
+#trait.dist<-parDist(as.matrix(traits), method = "euclidean")
+trait.dist<-dist(as.matrix(traits), method = "euclidean")
 
 # sanity check
 dim(rpkg)
@@ -113,13 +116,39 @@ ggplot(fred, aes(y = Rstar, x = SF) )+
   theme_depth()
 
 #########################################################################
+# Statistical tests to explain FRED
+#########################################################################
+
+# model with all the variables
+my.model<-lm(fred$Rstar~fred$Bay+fred$SF+fred$Salinity+fred$Temperature+fred$Depth+fred$nCells+fred$ChlA+fred$Nitrate+fred$Ammonium+fred$Phosphate+fred$Silicate)
+qqnorm(my.model$residuals);qqline(my.model$residuals, col = "red")
+summary(my.model) # R2 = 0.76
+plot(my.model , which = 1) # residuals are not so far
+
+# model with Jojy's variables
+require("hydroTSM")
+fred$Season<-time2season(as.Date(fred$Date), out.fmt = "seasons", type="default")
+my.model<-lm(fred$Rstar~fred$Bay+fred$SF+fred$Season+fred$Salinity)
+qqnorm(my.model$residuals);qqline(my.model$residuals, col = "red")
+summary(my.model) # R2 = 0.674
+plot(my.model , which = 1) # residuals are less fitted
+plot(my.model$fitted.values, fred$N)
+
+# test single categorical variable
+ggdensity(fred$Rstar) # data distribution is not normal
+ggplot(fred, aes(y = Rstar, x = Season))+geom_boxplot()
+require("pgirmess")
+kruskal.test(fred$Rstar, fred$Season) # non parametric test
+kruskalmc(fred$Rstar, fred$Season)  # multiple comparison to know which categories are significantly different
+
+#########################################################################
 # Drivers of functional redundancy
 #########################################################################
 
 ## FRED correlation with env. variables
 # divide by size-fraction
-cor.fred.PA<-na.omit(data.frame(t(cor(fred[fred$SF ==  "Particle-Attached","Rstar"],fred[fred$SF ==  "Particle-Attached", 14:ncol(fred)] ))));colnames(cor.fred.PA)<-c("R2");cor.fred.PA$SF<-"Particle-Attached"
-cor.fred.FL<-na.omit(data.frame(t(cor(fred[fred$SF ==  "Free-Living","Rstar"],fred[fred$SF ==  "Free-Living", 14:ncol(fred)] ))));colnames(cor.fred.FL)<-c("R2");cor.fred.FL$SF<-"Free-Living"
+cor.fred.PA<-na.omit(data.frame(t(cor(fred[fred$SF ==  "Particle-Attached","Rstar"],fred[fred$SF ==  "Particle-Attached", 15:ncol(fred)-1] ))));colnames(cor.fred.PA)<-c("R2");cor.fred.PA$SF<-"Particle-Attached"
+cor.fred.FL<-na.omit(data.frame(t(cor(fred[fred$SF ==  "Free-Living","Rstar"],fred[fred$SF ==  "Free-Living", 15:ncol(fred)-1] ))));colnames(cor.fred.FL)<-c("R2");cor.fred.FL$SF<-"Free-Living"
 # merge results
 cor.fred<-as.data.frame(rbind(cor.fred.PA,cor.fred.FL))
 # format
